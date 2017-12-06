@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# start/stop Neo4J database
+
+name=archneo
+cmd=$1
+
+start(){
+	user=`id -u`
+	group=`id -g`
+	#--user ${user}:${group} \
+	docker run \
+		--name $name \
+		--memory="1g" --cpus="1.5" \
+		--detach \
+    --publish=7474:7474 --publish=7687:7687 \
+    --volume=$HOME/neo4j/data:/data \
+    --volume=$HOME/neo4j/logs:/logs \
+    neo4j:3.0
+}
+
+if [ "$cmd" = "start" ]; then
+	echo starting neo ..
+	start
+	echo .. neo started
+elif [ "$cmd" = "stop" ]; then
+	echo stopping neo ..
+	docker stop --time 30 $name
+	echo .. neo stopped
+elif [ "$cmd" = "status" ]; then
+	echo getting neo status ..
+	status=`docker ps \
+		--filter "name=$name" --filter 'status=running' \
+		| tail +2 | wc -l`
+	if [ $status = '1' ]; then
+		echo "$name is running"
+	else
+		echo "$name is not running correctly"
+	fi
+	return $status
+else
+	echo "usage: neo start|stop|status"
+fi
